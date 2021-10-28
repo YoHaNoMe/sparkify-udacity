@@ -138,15 +138,15 @@ This will install all of the required packages within the `requirements.txt` fil
 
 ### Running Application
 
-1.  First you have to create database `testdb` 
+1.  First you have to create a database with any name except ***sparkifydb***, ex. `testdb` .
 
-2. Run `create_tables` file to  the tables mentioned [above](https://github.com/YoHaNoMe/sparkify-udacity#tables). You have to pass your **username** and **password** that you have created in installing [PostgreSQL Step](https://github.com/YoHaNoMe/sparkify-udacity#postgresql).
+2. Run `create_tables` file to  the tables mentioned [above](https://github.com/YoHaNoMe/sparkify-udacity#tables). You have to pass your **username** , **password** and **database** you have created. the *username* and *password* is what you have created in installing [PostgreSQL Step](https://github.com/YoHaNoMe/sparkify-udacity#postgresql).
 
 ```
 python create_tables.py username password
 ```
 
-3. Run `etl.py` this file will extract data from json files and insert it into the tables. Again you have to pass your **username** and **password** that you have created in installing [PostgreSQL Step](https://github.com/YoHaNoMe/sparkify-udacity#postgresql).
+3. Run `etl.py` this file will extract data from json files and insert it into the tables. Again  you have to pass your **username** , **password** and **database**. the *username* and *password* is what you have created in installing [PostgreSQL Step](https://github.com/YoHaNoMe/sparkify-udacity#postgresql).
 
 ```
 python etl.py username password
@@ -160,11 +160,11 @@ python etl.py username password
 
 ### Finally 
 
-When you finish remove `sparkifydb` and `testdb`  by:
+When you finish remove `sparkifydb` and `your_database_name`  by:
 
 ```
 DROP DATABASE IF EXISTS sparkifydb
-DROP DATABASE IF EXISTS testdb
+DROP DATABASE IF EXISTS your_database_name
 ```
 
 ## Tables In Details
@@ -173,36 +173,45 @@ DROP DATABASE IF EXISTS testdb
 
 ##### Songplays
 
-**Note:** We didn't use foreign_key with any of `song_id` or `artist_id` because the data is not *UNIQUE*. So we can't make any of `songs.song_id` nor `artists.artist_id` *unique*.
-
 Create Query
 
 ```
-CREATE TABLE songplays (
-	songplay_id serial PRIMARY KEY,
-	start_time float NOT NULL,
-	user_id int,
-	level varchar,
-	song_id varchar,
-	artist_id varchar,
-	session_id int,
-	location varchar,
-	user_agent varchar
-)
+CREATE TABLE IF NOT EXISTS songplays (
+    songplay_id SERIAL PRIMARY KEY,
+    start_time float NOT NULL,
+    user_id int,
+    level varchar,
+    song_id varchar,
+    artist_id varchar,
+    session_id int,
+    location varchar,
+    user_agent varchar,
+
+    CONSTRAINT fk_songs
+        FOREIGN KEY(song_id)
+            REFERENCES songs(song_id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+    CONSTRAINT fk_artists
+        FOREIGN KEY(artist_id)
+            REFERENCES artists(artist_id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE)
 ```
 
 Insert Query
 
 ```
+songplay_table_insert = ("""
 INSERT INTO songplays (
-start_time,
-user_id,
-level,
-song_id,
-artist_id,
-session_id,
-location,
-user_agent) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    start_time,
+    user_id,
+    level,
+    song_id,
+    artist_id,
+    session_id,
+    location,
+    user_agent) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 ```
 
 ### Dimension Tables
@@ -211,84 +220,86 @@ user_agent) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 
 Create Query
 ```
-CREATE TABLE users (
-user_id int PRIMARY KEY,
-first_name varchar,
-last_name varchar,
-gender varchar,
-level varchar
-)
+CREATE TABLE IF NOT EXISTS users (
+    user_id int PRIMARY KEY,
+    first_name varchar,
+    last_name varchar,
+    gender varchar,
+    level varchar)
 ```
-
-**Note:** We add `INSERT ... ON CONFLICT (user_id) DO NOTHING;` because we want a *UNIQUE* users.
 
 Insert Query
 
 ```
 INSERT INTO users (
-user_id,
-first_name,
-last_name,
-gender,
-level) VALUES (%s, %s, %s, %s, %s)
-ON CONFLICT (user_id)
-DO NOTHING
+    user_id,
+    first_name,
+    last_name,
+    gender,
+    level) VALUES (%s, %s, %s, %s, %s)
+
+ 	ON CONFLICT (user_id)
+    DO UPDATE SET  level=EXCLUDED.level
 ```
 
 ##### 2- Songs
 
-**Note:** We didn't use primary_key with  `song_id` because the data is not *UNIQUE*. 
-We could use `INSERT ... ON CONFLICT target action;` but this will eliminate fields that we will use to join it with ***artists*** Table to build ***songplays*** table. As the requirements specify that there will be **one row** in ***songplays*** table that will have a value for `artist_id` and `song_id` and if we make `song_id` a primary_key that row will be eliminated **as we don't know which row it is**.
-
 Create Query
 
 ```
-CREATE TABLE songs (
-song_id varchar NOT NULL,
-title varchar,
-artist_id varchar,
-year int,
-duration float
-)
+CREATE TABLE IF NOT EXISTS songs (
+    song_id varchar PRIMARY KEY,
+    title varchar,
+    artist_id varchar,
+    year int,
+    duration float)
 ```
 
 Insert Query
 
 ```
 INSERT INTO songs (
-song_id,
-title,
-artist_id,
-year,
-duration) VALUES (%s, %s, %s, %s, %s)
+    song_id,
+    title,
+    artist_id,
+    year,
+    duration) VALUES (%s, %s, %s, %s, %s)
+    ON CONFLICT (song_id)
+    DO UPDATE SET
+        title=EXCLUDED.title,
+        artist_id=EXCLUDED.artist_id,
+        year=EXCLUDED.year,
+        duration=EXCLUDED.duration
 ```
 
 ##### 3- Artists
 
-**Note:** We didn't use primary_key with  `artist_id` because the data is not *UNIQUE*. 
-We could use `INSERT ... ON CONFLICT target action;` but this will eliminate fields that we will use to join it with ***songs*** Table to build ***songplays*** table. As the requirements specify that there will be **one row** in ***songplays*** table that will have a value for `artist_id` and `song_id` and if we make `artist_id` a primary_key that row will be eliminated **as we don't know which row it is**.
-
 Create Query
 
 ```
-CREATE TABLE artists (
-artist_id varchar NOT NULL,
-name varchar,
-location varchar,
-latitude float,
-longitude float
-)
+CREATE TABLE IF NOT EXISTS  artists (
+    artist_id varchar PRIMARY KEY,
+    name varchar,
+    location varchar,
+    latitude float,
+    longitude float)
 ```
 
 Insert Query
 
 ```
 INSERT INTO artists (
-artist_id,
-name,
-location,
-latitude,
-longitude) VALUES (%s, %s, %s, %s, %s)
+    artist_id,
+    name,
+    location,
+    latitude,
+    longitude) VALUES (%s, %s, %s, %s, %s)
+    ON CONFLICT (artist_id)
+    DO UPDATE SET
+        name=EXCLUDED.name,
+        location=EXCLUDED.location,
+        latitude=EXCLUDED.latitude,
+        longitude=EXCLUDED.longitude
 ```
 
 ##### 4- Time
@@ -296,32 +307,32 @@ longitude) VALUES (%s, %s, %s, %s, %s)
 Create Query
 
 ```
-CREATE TABLE time (
-id serial PRIMARY KEY,
-start_time timestamp NOT NULL,
-hour int NOT NULL,
-day int NOT NULL,
-week int NOT NULL,
-month int NOT NULL,
-year int NOT NULL,
-weekday int NOT NULL)
+CREATE TABLE IF NOT EXISTS  time (
+    id SERIAL PRIMARY KEY,
+    start_time timestamp NOT NULL,
+    hour int NOT NULL,
+    day int NOT NULL,
+    week int NOT NULL,
+    month int NOT NULL,
+    year int NOT NULL,
+    weekday int NOT NULL)
 ```
 
 Insert Query
 
 ```
 INSERT INTO time (
-start_time,
-hour,
-day,
-week,
-month,
-year,
-weekday) VALUES (%s, %s, %s, %s, %s, %s, %s)
+    start_time,
+    hour,
+    day,
+    week,
+    month,
+    year,
+    weekday) VALUES (%s, %s, %s, %s, %s, %s, %s)
 ```
 
 ## Error Convention
 
-- This error arise if you forget to pass *username* and *password* in `create_tables.py` and `etl.py` scripts. Please refer to [This Section](https://github.com/YoHaNoMe/sparkify-udacity#running-application).
+- This error arise if you forget to pass *username*, *password* and *database_name* in `create_tables.py` and `etl.py` scripts. Please refer to [This Section](https://github.com/YoHaNoMe/sparkify-udacity#running-application).
 
 >You have to pass username and password. please refer to the documentation

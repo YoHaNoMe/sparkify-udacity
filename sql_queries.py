@@ -9,20 +9,31 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 # CREATE TABLES
 
 songplay_table_create = ("""
-CREATE TABLE songplays (
-    songplay_id serial PRIMARY KEY,
-    start_time float NOT NULL,
+CREATE TABLE IF NOT EXISTS songplays (
+    songplay_id SERIAL PRIMARY KEY,
+    start_time timestamp NOT NULL,
     user_id int,
     level varchar,
     song_id varchar,
     artist_id varchar,
     session_id int,
     location varchar,
-    user_agent varchar)
+    user_agent varchar,
+
+    CONSTRAINT fk_songs
+        FOREIGN KEY(song_id)
+            REFERENCES songs(song_id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE,
+    CONSTRAINT fk_artists
+        FOREIGN KEY(artist_id)
+            REFERENCES artists(artist_id)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE)
 """)
 
 user_table_create = ("""
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id int PRIMARY KEY,
     first_name varchar,
     last_name varchar,
@@ -31,8 +42,8 @@ CREATE TABLE users (
 """)
 
 song_table_create = ("""
-CREATE TABLE songs (
-    song_id varchar NOT NULL,
+CREATE TABLE IF NOT EXISTS songs (
+    song_id varchar PRIMARY KEY,
     title varchar,
     artist_id varchar,
     year int,
@@ -40,8 +51,8 @@ CREATE TABLE songs (
 """)
 
 artist_table_create = ("""
-CREATE TABLE artists (
-    artist_id varchar NOT NULL,
+CREATE TABLE IF NOT EXISTS  artists (
+    artist_id varchar PRIMARY KEY,
     name varchar,
     location varchar,
     latitude float,
@@ -49,8 +60,8 @@ CREATE TABLE artists (
 """)
 
 time_table_create = ("""
-CREATE TABLE time (
-    id serial PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS  time (
+    id SERIAL PRIMARY KEY,
     start_time timestamp NOT NULL,
     hour int NOT NULL,
     day int NOT NULL,
@@ -81,8 +92,10 @@ INSERT INTO users (
     last_name,
     gender,
     level) VALUES (%s, %s, %s, %s, %s)
+
     ON CONFLICT (user_id)
-    DO NOTHING
+    DO UPDATE SET
+        level=EXCLUDED.level
 """)
 
 song_table_insert = ("""
@@ -92,6 +105,12 @@ INSERT INTO songs (
     artist_id,
     year,
     duration) VALUES (%s, %s, %s, %s, %s)
+    ON CONFLICT (song_id)
+    DO UPDATE SET
+        title=EXCLUDED.title,
+        artist_id=EXCLUDED.artist_id,
+        year=EXCLUDED.year,
+        duration=EXCLUDED.duration
 """)
 
 artist_table_insert = ("""
@@ -101,6 +120,12 @@ INSERT INTO artists (
     location,
     latitude,
     longitude) VALUES (%s, %s, %s, %s, %s)
+    ON CONFLICT (artist_id)
+    DO UPDATE SET
+        name=EXCLUDED.name,
+        location=EXCLUDED.location,
+        latitude=EXCLUDED.latitude,
+        longitude=EXCLUDED.longitude
 """)
 
 

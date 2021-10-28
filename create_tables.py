@@ -4,7 +4,7 @@ from sql_queries import create_table_queries, drop_table_queries
 import pandas as pd
 
 
-def create_database(username, password):
+def create_database(username, password, default_database):
     """
     - Creates and connects to the sparkifydb
     - Returns the connection and cursor to sparkifydb
@@ -12,8 +12,8 @@ def create_database(username, password):
 
     # connect to default database
     conn = psycopg2.connect(
-        "host=127.0.0.1 dbname=testdb user={} password={}".
-        format(username, password))
+        "host=127.0.0.1 dbname={} user={} password={}".
+        format(default_database, username, password))
     conn.set_session(autocommit=True)
     cur = conn.cursor()
 
@@ -66,15 +66,18 @@ def main():
     - Finally, closes the connection.
     """
 
-    # Check if arguments not equals to 3 (filename, username, password)
-    if len(sys.argv) != 3:
+    '''
+    Check if arguments not equals to 4
+    (filename, username, password, default database)
+    '''
+    if len(sys.argv) != 4:
         raise ValueError('''You have to pass username and password.
-                        \please refer to the documentation''')
+                        please refer to the documentation''')
 
     # Extract username and password
-    username, password = tuple(sys.argv[1:3])
+    username, password, default_database = tuple(sys.argv[1:4])
 
-    cur, conn = create_database(username, password)
+    cur, conn = create_database(username, password, default_database)
 
     drop_tables(cur, conn)
     create_tables(cur, conn)
