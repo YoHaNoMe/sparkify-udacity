@@ -138,9 +138,9 @@ This will install all of the required packages within the `requirements.txt` fil
 
 ### Running Application
 
-1.  First you have to create database `test_db` 
+1.  First you have to create database `testdb` 
 
-2. Run `create_tables` file to create the database and the tables mentioned [above](https://github.com/YoHaNoMe/sparkify-udacity#tables). You have to pass your **username** and **password** that you have created in installing [PostgreSQL Step](https://github.com/YoHaNoMe/sparkify-udacity#postgresql).
+2. Run `create_tables` file to  the tables mentioned [above](https://github.com/YoHaNoMe/sparkify-udacity#tables). You have to pass your **username** and **password** that you have created in installing [PostgreSQL Step](https://github.com/YoHaNoMe/sparkify-udacity#postgresql).
 
 ```
 python create_tables.py username password
@@ -160,11 +160,11 @@ python etl.py username password
 
 ### Finally 
 
-When you finish remove `sparkifydb` and `test_db` by:
+When you finish remove `sparkifydb` and `testdb`  by:
 
 ```
 DROP DATABASE IF EXISTS sparkifydb
-DROP DATABASE IF EXISTS test_db
+DROP DATABASE IF EXISTS testdb
 ```
 
 ## Tables In Details
@@ -173,7 +173,7 @@ DROP DATABASE IF EXISTS test_db
 
 ##### Songplays
 
-**Note:** We didn't use foreign_key with any of `song_id` or `artist_id` because the data contains *NULL* Values.
+**Note:** We didn't use foreign_key with any of `song_id` or `artist_id` because the data is not *UNIQUE*. So we can't make any of `songs.song_id` nor `artists.artist_id` *unique*.
 
 Create Query
 
@@ -322,6 +322,6 @@ weekday) VALUES (%s, %s, %s, %s, %s, %s, %s)
 
 ## Error Convention
 
-- This error arise if you forget to pass *username* and *password* in `create_tables.py` and `etl.py` scripts. Please refer to [This Section](https://github.com/YoHaNoMe/sparkify-udacity#running-application)
+- This error arise if you forget to pass *username* and *password* in `create_tables.py` and `etl.py` scripts. Please refer to [This Section](https://github.com/YoHaNoMe/sparkify-udacity#running-application).
 
 >You have to pass username and password. please refer to the documentation
